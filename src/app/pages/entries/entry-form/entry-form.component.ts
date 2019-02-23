@@ -2,29 +2,29 @@ import {Component, OnInit, AfterContentChecked} from '@angular/core';
 import {FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
 import {ActivatedRoute, Router} from '@angular/router';
 
-import {Category} from '../shared/category-model';
-import {CategoryService} from '../shared/category.service';
+import {Entry} from '../shared/entry-model';
+import {EntryService} from '../shared/entry.service';
 
 import {switchMap} from 'rxjs/operators';
 
 import toastr from 'toastr';
 
 @Component({
-    selector: 'app-category-form',
-    templateUrl: './category-form.component.html',
-    styleUrls: ['./category-form.component.scss']
+    selector: 'app-entry-form',
+    templateUrl: './entry-form.component.html',
+    styleUrls: ['./entry-form.component.scss']
 })
-export class CategoryFormComponent implements OnInit, AfterContentChecked {
+export class EntryFormComponent implements OnInit, AfterContentChecked {
 
     currentAction: string;
-    categoryForm: FormGroup;
+    entryForm: FormGroup;
     pageTitle: string;
     serverErrorMessages: string[] = null;
     submittingForm: boolean = null;
-    category: Category = new Category();
+    entry: Entry = new Entry();
 
     constructor(
-        private categoryService: CategoryService,
+        private entryService: EntryService,
         private route: ActivatedRoute,
         private router: Router,
         private formBuilder: FormBuilder
@@ -33,8 +33,8 @@ export class CategoryFormComponent implements OnInit, AfterContentChecked {
 
     ngOnInit() {
         this.setCurrentAction();
-        this.buildCategoryForm();
-        this.loadCategory();
+        this.buildEntryForm();
+        this.loadEntry();
     }
 
     ngAfterContentChecked(): void {
@@ -45,9 +45,9 @@ export class CategoryFormComponent implements OnInit, AfterContentChecked {
         this.submittingForm = true;
 
         if (this.currentAction === 'new') {
-            this.createCategory();
+            this.createEntry();
         } else {
-            this.updateCategory();
+            this.updateEntry();
         }
     }
 
@@ -65,25 +65,30 @@ export class CategoryFormComponent implements OnInit, AfterContentChecked {
     /**
      * formata form
      */
-    private buildCategoryForm() {
-        this.categoryForm = this.formBuilder.group({
+    private buildEntryForm() {
+        this.entryForm = this.formBuilder.group({
             id: [null],
             name: [null, [Validators.required, Validators.minLength(2)]],
-            description: [null]
+            description: [null],
+            type: [null, [Validators.required]],
+            amount: [null, [Validators.required]],
+            date: [null, [Validators.required]],
+            paid: [null, [Validators.required]],
+            categoryId: [null, [Validators.required]]
         });
     }
 
     /**
      * preenche form se edit
      */
-    private loadCategory() {
+    private loadEntry() {
         if (this.currentAction === 'edit') {
             this.route.paramMap.pipe(
-                switchMap(params => this.categoryService.getById(+params.get('id')))
+                switchMap(params => this.entryService.getById(+params.get('id')))
             ).subscribe(
-                (category) => {
-                    this.category = category;
-                    this.categoryForm.patchValue(category);
+                (entry) => {
+                    this.entry = entry;
+                    this.entryForm.patchValue(entry);
                 },
                 (error) => alert('Ocorreu um erro no servidor, tente mais tarde')
             );
@@ -95,22 +100,22 @@ export class CategoryFormComponent implements OnInit, AfterContentChecked {
      */
     private setPageTitle() {
         if (this.currentAction === 'new') {
-            this.pageTitle = 'Cadastro';
+            this.pageTitle = 'Cadastro de Novo Lançamento';
         } else {
-            const categoryName = this.category.name || '';
-            this.pageTitle = 'Editar: ' + categoryName;
+            const entryName = this.entry.name || '';
+            this.pageTitle = 'Editando Lançamento: ' + entryName;
         }
     }
 
     /**
      * criar categoria
      */
-    private createCategory() {
-        const category: Category = Object.assign(new Category(), this.categoryForm.value);
+    private createEntry() {
+        const entry: Entry = Object.assign(new Entry(), this.entryForm.value);
 
-        this.categoryService.create(category)
+        this.entryService.create(entry)
             .subscribe(
-                category => this.actionsForSucccess(category),
+                entry => this.actionsForSucccess(entry),
                 error => this.actionsForError(error)
             );
     }
@@ -118,12 +123,12 @@ export class CategoryFormComponent implements OnInit, AfterContentChecked {
     /**
      * editar categoria
      */
-    private updateCategory() {
-        const category: Category = Object.assign(new Category(), this.categoryForm.value);
+    private updateEntry() {
+        const entry: Entry = Object.assign(new Entry(), this.entryForm.value);
 
-        this.categoryService.update(category)
+        this.entryService.update(entry)
             .subscribe(
-                category => this.actionsForSucccess(category),
+                entry => this.actionsForSucccess(entry),
                 error => this.actionsForError(error)
             );
     }
@@ -131,15 +136,15 @@ export class CategoryFormComponent implements OnInit, AfterContentChecked {
     /**
      * ação de sucesso
      */
-    private actionsForSucccess(category: Category) {
+    private actionsForSucccess(entry: Entry) {
         toastr.success('Categoria criado com sucesso');
 
         /**
          * recarrega component
          */
-        this.router.navigateByUrl('categories', {skipLocationChange: true})
+        this.router.navigateByUrl('entries', {skipLocationChange: true})
             .then(() => {
-                this.router.navigate(['categories', category.id, 'edit']);
+                this.router.navigate(['entries', entry.id, 'edit']);
             });
     }
 
