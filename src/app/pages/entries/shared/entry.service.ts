@@ -1,40 +1,20 @@
-import {Injectable} from '@angular/core';
-import {HttpClient, HttpHeaders} from '@angular/common/http';
-
-import {Observable, throwError} from 'rxjs';
-import {map, catchError, flatMap} from 'rxjs/operators';
+import {Injectable, Injector} from '@angular/core';
+import {BaseResourceService} from '../../../shared/services/base-resource.service';
 
 import {CategoryService} from '../../categories/shared/category.service';
 
 import {Entry} from './entry-model';
 
+import {flatMap} from 'rxjs/operators';
+import {Observable} from 'rxjs';
+
 @Injectable({
     providedIn: 'root'
 })
-export class EntryService {
-    private apiPath = 'api/entries';
-    constructor(private http: HttpClient, private categoryService: CategoryService) {
-    }
+export class EntryService extends BaseResourceService<Entry> {
 
-    /**
-     * retornar list data
-     */
-    getAll(): Observable<Entry[]> {
-        return this.http.get(this.apiPath).pipe(
-            catchError(this.handlerError),
-            map(this.jsonDataToEntries)
-        );
-    }
-
-    /**
-     * retornar por id
-     */
-    getById(id: number): Observable<Entry> {
-        const url = `${this.apiPath}/${id}`;
-        return this.http.get(url).pipe(
-            catchError(this.handlerError),
-            map(this.jsonDataToEntry)
-        );
+    constructor(protected injector: Injector, private categoryService: CategoryService) {
+        super('api/entries', injector);
     }
 
     /**
@@ -46,11 +26,7 @@ export class EntryService {
         return this.categoryService.getById(entry.categoryId).pipe(
             flatMap(category => {
                 entry.category = category;
-                // retorna um observable<Entry>
-                return this.http.post(this.apiPath, entry).pipe(
-                    catchError(this.handlerError),
-                    map(this.jsonDataToEntry)
-                );
+                return super.create(entry);
             })
         );
     }
@@ -61,26 +37,11 @@ export class EntryService {
      * pois é retornado objeto direto do servidor
      */
     update(entry: Entry): Observable<Entry> {
-        const url = `${this.apiPath}/${entry.id}`;
         return this.categoryService.getById(entry.categoryId).pipe(
             flatMap(category => {
                entry.category = category;
-                return this.http.put(url, entry).pipe(
-                    catchError(this.handlerError),
-                    map(() => entry)
-                );
+               return super.update(entry);
             })
-        );
-    }
-
-    /**
-     * excluir entry
-     */
-    delete(id: number): Observable<any> {
-        const url = `${this.apiPath}/${id}`;
-        return this.http.delete(url).pipe(
-            catchError(this.handlerError),
-            map(() => null)
         );
     }
 
@@ -91,7 +52,7 @@ export class EntryService {
     /**
      * retorna entries
      */
-    private jsonDataToEntries(jsonData: any[]): Entry[] {
+    protected jsonDataToResources(jsonData: any[]): Entry[] {
         /**
          * exemplos de object e object do tipo Entry
          */
@@ -110,15 +71,7 @@ export class EntryService {
     /**
      * retorna entry
      */
-    private jsonDataToEntry(jsonData: any): Entry {
+    protected jsonDataToResource(jsonData: any): Entry {
         return Object.assign(new Entry(), jsonData);
-    }
-
-    /**
-     * retorna error
-     */
-    private handlerError(error: any): Observable<any> {
-        console.log('ERRO NA REQUISIÇÃO => ', error);
-        return throwError(error);
     }
 }
