@@ -5,7 +5,7 @@ import {CategoryService} from '../../categories/shared/category.service';
 
 import {Entry} from './entry-model';
 
-import {flatMap} from 'rxjs/operators';
+import {catchError, flatMap} from 'rxjs/operators';
 import {Observable} from 'rxjs';
 
 @Injectable({
@@ -14,7 +14,7 @@ import {Observable} from 'rxjs';
 export class EntryService extends BaseResourceService<Entry> {
 
     constructor(protected injector: Injector, private categoryService: CategoryService) {
-        super('api/entries', injector);
+        super('api/entries', injector, Entry.fromJson);
     }
 
     /**
@@ -23,12 +23,7 @@ export class EntryService extends BaseResourceService<Entry> {
      * pois é retornado objeto direto do servidor
      */
     create(entry: Entry): Observable<Entry> {
-        return this.categoryService.getById(entry.categoryId).pipe(
-            flatMap(category => {
-                entry.category = category;
-                return super.create(entry);
-            })
-        );
+        return this.setCategoryAndSendToServer(entry, super.create.bind(this));
     }
 
     /**
@@ -37,41 +32,16 @@ export class EntryService extends BaseResourceService<Entry> {
      * pois é retornado objeto direto do servidor
      */
     update(entry: Entry): Observable<Entry> {
+        return this.setCategoryAndSendToServer(entry, super.update.bind(this));
+    }
+
+    private setCategoryAndSendToServer(entry: Entry, sendFn: any): Observable<Entry> {
         return this.categoryService.getById(entry.categoryId).pipe(
             flatMap(category => {
-               entry.category = category;
-               return super.update(entry);
-            })
+                entry.category = category;
+                return sendFn(entry);
+            }),
+            catchError(this.handlerError)
         );
-    }
-
-    /**
-     * metodos private ******************************************************************
-     */
-
-    /**
-     * retorna entries
-     */
-    protected jsonDataToResources(jsonData: any[]): Entry[] {
-        /**
-         * exemplos de object e object do tipo Entry
-         */
-        /**
-            console.log(jsonData[0] as Entry);
-            console.log(Object.assign(new Entry(), jsonData[0]));
-         */
-        const entries: Entry[] = [];
-        jsonData.forEach(element => {
-            const entry = Entry.fromJson(element);
-            entries.push(entry);
-        });
-        return entries;
-    }
-
-    /**
-     * retorna entry
-     */
-    protected jsonDataToResource(jsonData: any): Entry {
-        return Entry.fromJson(jsonData);
     }
 }
