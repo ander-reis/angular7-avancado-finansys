@@ -36,8 +36,8 @@ export class FormFieldErrorComponent implements OnInit {
         if (this.formControl.errors.required) {
             return 'Dado obrigatório';
         } else if (this.formControl.errors.minlength) {
-            const requiredLength = this.formControl.errors.minlenght.requiredLength;
-            return `Deve ter no minimo ${requiredLength} carecteres`;
+            const requiredLength = this.formControl.errors.minlength.requiredLength;
+            return `Deve ter no mínimo ${requiredLength} caracteres`;
         }
     }
 
