@@ -36,6 +36,12 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
+            "allowedCommonJsDependencies": [
+              "currency-formatter",
+              "toastr",
+              "chart.js",
+              "primeng"
+            ],
             "outputPath": "dist/angular7-avancado-finansys",
             "index": "src/index.html",
             "main": "src/main.ts",
